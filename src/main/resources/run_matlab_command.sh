@@ -15,4 +15,4 @@ if [ -z "$command" ]; then
     exit 1
 fi
 
-/usr/bin/xvfb-run -a matlab -batch "$command"
+/usr/bin/xvfb-run --auto-servernum --server-num=1 matlab -batch "$command"
