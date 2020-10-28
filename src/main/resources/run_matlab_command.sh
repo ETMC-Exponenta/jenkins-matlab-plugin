@@ -15,4 +15,4 @@ if [ -z "$command" ]; then
     exit 1
 fi
 
-matlab -batch "$command"
+/usr/bin/xvfb-run -a matlab -batch "$command"
