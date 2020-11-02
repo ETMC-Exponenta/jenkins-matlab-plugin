@@ -3,16 +3,18 @@
 
 usage() {
     echo ''
-    echo '    Usage: run_matlab_command.sh command'
+    echo '    Usage: run_matlab_command.sh command dir'
     echo ''
     echo '    command       - MATLAB script, statement, or function to execute.'
     echo ''
+    echo '    dir - desired directory in which you want to start MATLAB command '
 }
 
 command=$1
-if [ -z "$command" ]; then
+dir=$2
+if [ -z "$command" ] || [ -z "$dir" ]; then
     usage
     exit 1
 fi
-
-/usr/bin/xvfb-run --auto-servernum --server-num=1 matlab -batch "$command"
+cd "$dir"
+/usr/bin/xvfb-run --auto-servernum --server-num=1 /100Gb/MathWorks/MATLAB/R2020b/bin/matlab -batch "$command"

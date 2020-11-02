@@ -25,4 +25,12 @@
 	        <f:textbox/>
 	  </f:entry> 
 
+	  <f:entry field="command">
+	        <f:textbox/>
+	  </f:entry> 
+
+	  <f:entry field="directory">
+	        <f:textbox/>
+	  </f:entry> 
+
 </j:jelly>

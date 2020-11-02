@@ -28,4 +28,14 @@
     	<f:checkbox title="Cobertura model coverage" name="taModelCoverageChkBx" checked="${instance.taModelCoverageChkBx}"/>
   	  </f:entry>  
 </f:section>
+
+<f:section title="Additional Parameters">
+   <f:entry field="command">
+      <f:checkbox title="Some command" name="command" checked="${instance.command}"/>
+     </f:entry>
+      
+      <f:entry field="directory">
+      <f:checkbox title="Desired Directory" name="directory" checked="${instance.directory}"/>
+      </f:entry>  
+</f:section>
 </j:jelly>

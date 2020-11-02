@@ -28,17 +28,17 @@
   
 </f:section>
 
-<f:section title="Generate Coverage Artifacts">
-   <f:optionalBlock name="coberturaArtifact" field="coberturaArtifact" title="Cobertura code coverage" checked="${instance.coberturaArtifact.selected}">
-	 <f:entry field="coberturaReportFilePath" title="File path: ">
-    	<f:textbox default="matlabTestArtifacts/cobertura.xml"/>
-     </f:entry>
-   </f:optionalBlock>
-   
-   <f:optionalBlock name="modelCoverageArtifact" field="modelCoverageArtifact" title="Cobertura model coverage" checked="${instance.modelCoverageArtifact.selected}">
-  	  <f:entry field="modelCoverageFilePath" title="File path: ">
-  	  <f:textbox default="matlabTestArtifacts/coberturamodelcoverage.xml"/>
-  	  </f:entry>
+<f:section title="Additional Parameters">
+    <f:optionalBlock name="command" field="command" title="MATLAB Command" checked="${instance.command.selected}">  
+      <f:entry field="command" title="Command: ">
+      <f:textbox default="pwd"/>
+      </f:entry>      
+    </f:optionalBlock>
+    
+   <f:optionalBlock name="directory" field="directory" title="Desired Directory" checked="${instance.directory.selected}">  
+     <f:entry field="directory" title="Directory: ">
+      <f:textbox default="/var/lib/jenkins/workspace/"/>
+     </f:entry>   
    </f:optionalBlock>
 </f:section>
 </j:jelly>

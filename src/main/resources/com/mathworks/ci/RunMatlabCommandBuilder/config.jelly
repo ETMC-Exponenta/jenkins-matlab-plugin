@@ -5,4 +5,8 @@
 	        <f:textbox/>
 	  </f:entry> 
 
+	  <f:entry title="Directory" field="directory">
+	        <f:textbox/>
+	  </f:entry> 
+
 </j:jelly>
