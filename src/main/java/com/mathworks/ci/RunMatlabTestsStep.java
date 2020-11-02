@@ -31,6 +31,7 @@ public class RunMatlabTestsStep extends Step {
     private String codeCoverageCobertura;
     private String testResultsSimulinkTest;
     private String modelCoverageCobertura;
+    private String directory;
   
 
     @DataBoundConstructor
@@ -92,7 +93,15 @@ public class RunMatlabTestsStep extends Step {
     public void setModelCoverageCobertura(String modelCoverageCobertura) {
         this.modelCoverageCobertura = modelCoverageCobertura;
     }
+    
+    @DataBoundSetter
+    public void setDirectory(String directory) {
+        this.directory = directory;
+    }
 
+    public String getDirectory() {
+        return directory;
+    }
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
