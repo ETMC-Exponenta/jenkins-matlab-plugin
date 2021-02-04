@@ -22,6 +22,7 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.Util;
 
 public class RunMatlabTestsStep extends Step {
     
@@ -31,7 +32,9 @@ public class RunMatlabTestsStep extends Step {
     private String codeCoverageCobertura;
     private String testResultsSimulinkTest;
     private String modelCoverageCobertura;
-  
+    private String selectByTag;
+    private List<String> sourceFolder = new ArrayList<>();
+    private List<String> selectByFolder = new ArrayList<>();
 
     @DataBoundConstructor
     public RunMatlabTestsStep() {
@@ -93,6 +96,32 @@ public class RunMatlabTestsStep extends Step {
         this.modelCoverageCobertura = modelCoverageCobertura;
     }
 
+    public List<String> getSourceFolder() {
+        return sourceFolder;
+    }
+
+    @DataBoundSetter
+    public void setSourceFolder(List<String> sourceFolder) {
+        this.sourceFolder = Util.fixNull(sourceFolder);
+    }
+    
+    public String getSelectByTag() {
+        return this.selectByTag;
+    }
+    
+    @DataBoundSetter
+    public void setSelectByTag(String selectByTag) {
+        this.selectByTag = selectByTag;
+    }
+    
+    public List<String> getSelectByFolder() {
+        return this.selectByFolder;
+    }
+    
+    @DataBoundSetter
+    public void setSelectByFolder(List<String> selectByFolder) {
+        this.selectByFolder = selectByFolder;
+    }
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
@@ -126,7 +155,9 @@ public class RunMatlabTestsStep extends Step {
         inputArgs.add("'Test'");
 
         args.forEach((key, val) -> {
-            if (val != null) {
+            if(key.equals("SourceFolder") || key.equals("SelectByFolder") && val != null){
+                inputArgs.add("'" + key + "'" + "," + val);
+            }else if(val != null){
                 inputArgs.add("'" + key + "'" + "," + "'" + val.replaceAll("'", "''") + "'");
             }
         });
@@ -142,6 +173,15 @@ public class RunMatlabTestsStep extends Step {
         args.put("SimulinkTestResults", getTestResultsSimulinkTest());
         args.put("CoberturaCodeCoverage", getCodeCoverageCobertura());
         args.put("CoberturaModelCoverage", getModelCoverageCobertura());
+        args.put("SelectByTag", getSelectByTag());
+        addFolderArgs("SourceFolder",getSourceFolder(),args);
+        addFolderArgs("SelectByFolder",getSelectByFolder(),args);
         return args;
+    }
+    
+    private void addFolderArgs(String argName,List<String> value,Map<String,String> args) {
+        if(!value.isEmpty()){
+            args.put(argName, Utilities.getCellArrayFrmList(value));
+        }
     }
 }

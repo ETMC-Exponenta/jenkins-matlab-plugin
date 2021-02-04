@@ -9,20 +9,30 @@ package com.mathworks.ci;
  */
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.StaplerRequest;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.Launcher.ProcStarter;
+import hudson.Util;
+import hudson.model.AbstractDescribableImpl;
 import hudson.model.AbstractProject;
+import hudson.model.Descriptor;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.model.Computer;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.StaplerRequest;
+import hudson.Launcher.ProcStarter;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import jenkins.tasks.SimpleBuildStep;
@@ -32,7 +42,7 @@ public class RunMatlabTestsBuilder extends Builder implements SimpleBuildStep, M
 
     private int buildResult;
     private EnvVars env;
-    
+
     // Make all old values transient which protects them writing back on disk.
     private transient boolean tapChkBx;
     private transient boolean junitChkBx;
@@ -47,15 +57,18 @@ public class RunMatlabTestsBuilder extends Builder implements SimpleBuildStep, M
     private Artifact stmResultsArtifact = new NullArtifact();
     private Artifact modelCoverageArtifact = new NullArtifact();
     private Artifact pdfReportArtifact = new NullArtifact();
-   
+    
+    private SourceFolder sourceFolder;
+    private SelectByFolder selectByFolder;
+    private SelectByTag selectByTag;
+    
+
     @DataBoundConstructor
     public RunMatlabTestsBuilder() {
 
     }
-
-
+    
     // Getter and Setters to access local members
-
 
     @DataBoundSetter
     public void setTapArtifact(TapArtifact tapArtifact) {
@@ -87,6 +100,22 @@ public class RunMatlabTestsBuilder extends Builder implements SimpleBuildStep, M
         this.pdfReportArtifact = pdfReportArtifact;
     }
     
+    @DataBoundSetter
+    public void setSelectByTag(SelectByTag selectByTag) {
+        this.selectByTag = selectByTag;
+    }
+    
+    @DataBoundSetter
+    public void setSourceFolder(SourceFolder sourceFolder) {
+        this.sourceFolder = sourceFolder;
+    }
+    
+    @DataBoundSetter
+    public void setSelectByFolder(SelectByFolder selectByFolder) {
+    	this.selectByFolder = selectByFolder;
+    }
+
+
     public String getTapReportFilePath() {
         return this.getTapArtifact().getFilePath();
     }      
@@ -133,6 +162,16 @@ public class RunMatlabTestsBuilder extends Builder implements SimpleBuildStep, M
     
     public String getPdfReportFilePath() {
         return this.getPdfReportArtifact().getFilePath();
+    }
+    public SelectByTag getSelectByTag() {
+    	return this.selectByTag;
+    }
+    public SourceFolder getSourceFolder() {
+        return this.sourceFolder;
+    }
+    
+    public SelectByFolder getSelectByFolder(){
+    	return this.selectByFolder;
     }
 
     private Artifact getArtifactObject(boolean isChecked, Artifact returnVal)  {
@@ -233,6 +272,13 @@ public class RunMatlabTestsBuilder extends Builder implements SimpleBuildStep, M
 
     private synchronized int execMatlabCommand(FilePath workspace, Launcher launcher,
             TaskListener listener, EnvVars envVars) throws IOException, InterruptedException {
+
+        /*
+         * Handle the case for using MATLAB Axis for multi conf projects by adding appropriate
+         * matlabroot to env PATH
+         * */
+        Utilities.addMatlabToEnvPathFrmAxis(Computer.currentComputer(), listener, envVars);
+
         final String uniqueTmpFldrName = getUniqueNameForRunnerFile();
         ProcStarter matlabLauncher;
         try {
@@ -286,6 +332,29 @@ public class RunMatlabTestsBuilder extends Builder implements SimpleBuildStep, M
 
         args.forEach((key, val) -> inputArgsList.add("'" + key + "'" + "," + "'" + val.replaceAll("'", "''") + "'"));
 
+        /*
+        * Add source folder options to argument.
+        * For source folder we create a MATLAB cell array and add it to input argument list.
+        * */
+        SourceFolder sf = getSourceFolder();
+        if(sf != null && !sf.getSourceFolderPaths().isEmpty()){
+            sf.addSourceToInputArgs(inputArgsList, Utilities.getCellArrayFrmList(sf.getSourceFolderPaths().stream()
+                    .map(SourceFolderPaths::getSrcFolderPath)
+                    .collect(Collectors.toList())));
+        }
+        
+        // Add Test folders
+        if (getSelectByFolder() != null && !getSelectByFolder().getTestFolderPaths().isEmpty()) {
+            getSelectByFolder().addSourceToInputArgs(inputArgsList,
+                    Utilities.getCellArrayFrmList(getSelectByFolder().getTestFolderPaths().stream()
+                            .map(TestFolders::getTestFolders).collect(Collectors.toList())));
+        }
+
+        // Add Tag to arguments
+        if (getSelectByTag() != null && !getSelectByTag().getTestTag().isEmpty()) {
+            getSelectByTag().addTagToInputArgs(inputArgsList);
+        }
+
         return String.join(",", inputArgsList);
     }
 
@@ -300,6 +369,7 @@ public class RunMatlabTestsBuilder extends Builder implements SimpleBuildStep, M
      * 7Csort:date/jenkinsci-dev/AFYHSG3NUEI/UsVJIKoE4B8J
      * 
      */
+
     public static class PdfArtifact extends AbstractArtifactImpl {
 
         private static final String PDF_TEST_REPORT = "PDFTestReport";
@@ -437,5 +507,28 @@ public class RunMatlabTestsBuilder extends Builder implements SimpleBuildStep, M
         public String getFilePath();
 
         public boolean getSelected();
+    }
+    
+    public static final class SelectByTag extends AbstractDescribableImpl<SelectByTag> {
+        private String testTag;
+        private static final String SELECT_BY_TAG = "SelectByTag";
+
+        @DataBoundConstructor
+        public SelectByTag(String testTag) {
+            this.testTag = Util.fixNull(testTag);
+        }
+
+        public String getTestTag() {
+            return this.testTag;
+        }
+
+        public void addTagToInputArgs(List<String> inputArgsList) {
+            inputArgsList.add("'" + SELECT_BY_TAG + "'" + "," + "'"
+                    + getTestTag().replaceAll("'", "''") + "'");
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<SelectByTag> {
+        }
     }
 }
